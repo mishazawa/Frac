@@ -1,17 +1,17 @@
 extern crate minifb;
 
-use minifb::{Window, Key, WindowOptions, MouseMode};
+use minifb::{Window, Key, WindowOptions};
 
 const WIDTH: usize = 600;
 const HEIGHT: usize = 600;
-const FRACTAL_DEPTH: u32 = 512;
+const FRACTAL_DEPTH: u32 = 128;
 
 
 fn main() {
   let mut buffer: Vec<u32> = vec![0; WIDTH * HEIGHT];
 
   let mut window = match Window::new(
-    "F",
+    "Fractal - ESC to exit",
     WIDTH,
     HEIGHT,
     WindowOptions {
@@ -24,16 +24,10 @@ fn main() {
       }
     };
 
-  let mut range = 2.0;
+  let range = 2.0;
 
+  let mut angle: f64 = 0.0;
   while window.is_open() && !window.is_key_down(Key::Escape) {
-    let mut x_mouse = 0.0;
-    let mut y_mouse = 0.0;
-
-    window.get_mouse_pos(MouseMode::Discard).map(|(x, y)| {
-      x_mouse = map(x as f64, 0., WIDTH as f64, -1. , 1.);
-      y_mouse = map(y as f64, 0., HEIGHT as f64, -1. , 1.);
-    });
 
     let x_min = 0. - range;
     let y_min = 0. - range;
@@ -46,21 +40,19 @@ fn main() {
         let mut real = map(x as f64, 0., WIDTH as f64, x_min , x_max);
         let mut imag = map(y as f64, 0., HEIGHT as f64, y_min, y_max);
 
-        let origin_re = real;
-        let origin_im = imag;
-
         let mut n = 0;
 
         while n < FRACTAL_DEPTH {
           let re = real.powf(2.) - imag.powf(2.);
           let im = 2. * real * imag;
 
-          real = re + x_mouse;
-          imag = im + y_mouse;
+          real = re + angle.cos();
+          imag = im + angle.sin();
 
           if (real + imag).abs() > 16.0 {
             break;  // Bail
           }
+
           n += 1;
         }
 
@@ -72,16 +64,9 @@ fn main() {
         }
       }
     }
-
-    window.get_scroll_wheel().map(|scroll| {
-      if scroll.1 != 0. {
-        range /= 2.;
-      }
-      println!("Zoom {}", range);
-    });
-
     // We unwrap here as we want this code to exit if it fails
     window.update_with_buffer(&buffer).unwrap();
+    angle += 0.1;
   }
 }
 
